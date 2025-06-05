@@ -31,10 +31,14 @@ namespace Sudoku.Helpers
         /// Solver Constructor
         /// </summary>
         /// <param name="gridInstance">The grid instance.</param>
-        public Solver(Grid gridInstance)
+
+        private string difficulty = Sudoku.Constants.FormConstants.Easy;
+        public Solver(Grid gridInstance, string difficultyMode = null)
         {
             grid = gridInstance ?? new Grid(4, 4);
             InitializeBlackList();
+            if (difficultyMode != null)
+                difficulty = difficultyMode;
         }
 
         /// <summary>
@@ -49,42 +53,34 @@ namespace Sudoku.Helpers
             // Initialize Filled Cells to preserve which will be used while backtracking.
             IntializeFilledCells();
 
-            // Clear the blacklist
-            ClearBlackList();
+            List<int> numberOrder = Enumerable.Range(1, grid.GridSize).ToList();
+            if (difficulty == Sudoku.Constants.FormConstants.Hard)
+                numberOrder.Reverse();
+            else if (difficulty == Sudoku.Constants.FormConstants.Medium)
+                numberOrder = numberOrder.OrderBy(_ => random.Next()).ToList();
+            return SolveWithDFS(0, numberOrder);
+        }
+        
+        private bool SolveWithDFS(int cellIdx, List<int> numberOrder)
+        {
+            while (cellIdx < grid.TotalCells && filledCells.Contains(cellIdx))
+                cellIdx++;
+            if (cellIdx == grid.TotalCells)
+                return true;
 
-            int currentCellIndex = 0;
-
-            // Iterate all the cells of the grid.
-            while (currentCellIndex < grid.TotalCells)
+            var cell = grid.GetCell(cellIdx);
+            foreach (var num in numberOrder)
             {
-                // If current cell index already preserved in filled cells, pass it.
-                if (filledCells.Contains(currentCellIndex))
+                if (IsValidValueForTheCell(num, cell))
                 {
-                    ++currentCellIndex;
-                    continue;
-                }
-
-                // Clear blacklists of the indexes after the current index.
-                ClearBlackList(cleaningStartIndex: currentCellIndex + 1);
-
-                Cell currentCell = grid.GetCell(cellIndex: currentCellIndex);
-
-                int foundNumber = GetValidNumberForTheCell(currentCellIndex);
-
-                // No valid number found for the cell. Let's backtrack.
-                if (foundNumber == 0)
-                    currentCellIndex = BackTrackTo(currentCellIndex);
-                else
-                {
-                    // Set found valid value to current cell.
-                    grid.SetCellValue(currentCell.Index, foundNumber);
-                    ++currentCellIndex;
+                    grid.SetCellValue(cell.Index, num);
+                    if (SolveWithDFS(cellIdx + 1, numberOrder))
+                        return true;
+                    grid.SetCellValue(cell.Index, -1);
                 }
             }
-
-            return true;
+            return false;
         }
-
         /// <summary>
         /// Check whether grid is valid.
         /// </summary>

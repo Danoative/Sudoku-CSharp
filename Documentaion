@@ -1,0 +1,5 @@
+FormConstant.cs includes the difficulty setting strings
+
+Model folder contains the base grid/cell/position of the sudoku grids.
+
+Modify the generator.cs and solver.cs with DFS algorithm...
